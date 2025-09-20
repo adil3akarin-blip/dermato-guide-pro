@@ -24,7 +24,7 @@ import {
 import { toast } from "@/shared/ui/use-toast";
 import { ApiError, login, type LoginResponse } from "@/shared/api";
 
-const loginSchema = z.object({
+const loginSchema = z.object({ ыи
   email: z.string().email("Введите корректный email"),
   password: z.string().min(6, "Пароль должен содержать минимум 6 символов"),
   rememberMe: z.boolean().optional(),
@@ -32,13 +32,14 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-const persistAuthTokens = (tokens: LoginResponse, remember: boolean) => {
+const persistAuthTokens = (tokens: LoginResponse, remember?: boolean) => {
+  const shouldRemember = Boolean(remember);
   if (typeof window === "undefined") {
     return;
   }
 
-  const primaryStorage = remember ? window.localStorage : window.sessionStorage;
-  const secondaryStorage = remember ? window.sessionStorage : window.localStorage;
+  const primaryStorage = shouldRemember ? window.localStorage : window.sessionStorage;
+  const secondaryStorage = shouldRemember ? window.sessionStorage : window.localStorage;
 
   secondaryStorage.removeItem("accessToken");
   secondaryStorage.removeItem("refreshToken");
