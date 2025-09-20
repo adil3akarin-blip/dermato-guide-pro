@@ -24,7 +24,7 @@ import {
 import { toast } from "@/shared/ui/use-toast";
 import { ApiError, login, type LoginResponse } from "@/shared/api";
 
-const loginSchema = z.object({
+const loginSchema = z.object({ ыи
   email: z.string().email("Введите корректный email"),
   password: z.string().min(6, "Пароль должен содержать минимум 6 символов"),
   rememberMe: z.boolean().optional(),
