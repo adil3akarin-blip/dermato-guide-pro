@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -22,6 +22,7 @@ import {
   FormMessage,
 } from "@/shared/ui";
 import { toast } from "@/shared/ui/use-toast";
+import { ApiError, register } from "@/shared/api";
 
 const signUpSchema = z.object({
   email: z.string().email("Введите корректный email"),
@@ -41,6 +42,7 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const form = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
@@ -55,18 +57,25 @@ const SignUp = () => {
   const onSubmit = async (data: SignUpFormValues) => {
     setIsLoading(true);
     try {
-      // Здесь будет логика регистрации
-      console.log("SignUp data:", data);
+      await register({
+        email: data.email.trim(),
+        password: data.password,
+        confirmPassword: data.confirmPassword,
+        acceptTerms: data.acceptTerms,
+      });
       toast({
         title: "Успешная регистрация",
         description: "Добро пожаловать в SkinAI! Проверьте email для подтверждения.",
       });
-      // Редирект в личный кабинет
-      // navigate("/dashboard");
+      navigate("/login", { replace: true });
     } catch (error) {
+      const description =
+        error instanceof ApiError
+          ? error.message
+          : "Попробуйте еще раз или свяжитесь с поддержкой";
       toast({
         title: "Ошибка регистрации",
-        description: "Попробуйте еще раз или свяжитесь с поддержкой",
+        description,
         variant: "destructive",
       });
     } finally {
