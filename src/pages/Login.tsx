@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -22,6 +22,7 @@ import {
   FormMessage,
 } from "@/shared/ui";
 import { toast } from "@/shared/ui/use-toast";
+import { ApiError, login, type LoginResponse } from "@/shared/api";
 
 const loginSchema = z.object({
   email: z.string().email("Введите корректный email"),
@@ -31,9 +32,35 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+const persistAuthTokens = (tokens: LoginResponse, remember?: boolean) => {
+  const shouldRemember = Boolean(remember);
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const primaryStorage = shouldRemember ? window.localStorage : window.sessionStorage;
+  const secondaryStorage = shouldRemember ? window.sessionStorage : window.localStorage;
+
+  secondaryStorage.removeItem("accessToken");
+  secondaryStorage.removeItem("refreshToken");
+
+  if (tokens.accessToken) {
+    primaryStorage.setItem("accessToken", String(tokens.accessToken));
+  } else {
+    primaryStorage.removeItem("accessToken");
+  }
+
+  if (tokens.refreshToken) {
+    primaryStorage.setItem("refreshToken", String(tokens.refreshToken));
+  } else {
+    primaryStorage.removeItem("refreshToken");
+  }
+};
+
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -47,18 +74,29 @@ const Login = () => {
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      // Здесь будет логика авторизации
-      console.log("Login data:", data);
+      const payload = {
+        email: data.email.trim(),
+        password: data.password,
+        rememberMe: data.rememberMe ?? false,
+      };
+
+      const response = await login(payload);
+
+      persistAuthTokens(response, payload.rememberMe);
+
       toast({
         title: "Успешный вход",
         description: "Добро пожаловать в SkinAI!",
       });
-      // Редирект в личный кабинет
-      // navigate("/dashboard");
+      navigate("/dashboard");
     } catch (error) {
+      const description =
+        error instanceof ApiError
+          ? error.message
+          : "Проверьте правильность введенных данных";
       toast({
         title: "Ошибка входа",
-        description: "Проверьте правильность введенных данных",
+        description,
         variant: "destructive",
       });
     } finally {
